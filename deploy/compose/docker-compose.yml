@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: youtube_automation
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      target: api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # These override .env for container-specific settings
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/youtube_automation?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      STORAGE_BASE_DIR: /app/storage
+      FFMPEG_PATH: ffmpeg
+      QUEUE_BACKEND: redis
+    volumes:
+      - storage_data:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+      target: worker
+    env_file:
+      - .env
+    environment:
+      # These override .env for container-specific settings
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/youtube_automation?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      STORAGE_BASE_DIR: /app/storage
+      FFMPEG_PATH: ffmpeg
+      QUEUE_BACKEND: redis
+      WORKER_COUNT: 3
+    volumes:
+      - storage_data:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:
