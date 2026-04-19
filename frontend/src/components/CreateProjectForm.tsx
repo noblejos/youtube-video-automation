@@ -18,6 +18,8 @@ export default function CreateProjectForm() {
   const [script, setScript] = useState('');
   const [duration, setDuration] = useState(60);
   const [aspectRatio, setAspectRatio] = useState('9:16');
+  const [voiceId, setVoiceId] = useState('Matthew');
+  const [voiceEngine, setVoiceEngine] = useState('neural');
 
   const canSubmit = mode === 'topic' ? topic.trim().length > 0 : script.trim().length > 0;
 
@@ -34,6 +36,8 @@ export default function CreateProjectForm() {
             channel_style: 'dramatic_history_shorts',
             target_duration_sec: duration,
             aspect_ratio: aspectRatio,
+            voice_id: voiceId,
+            voice_engine: voiceEngine,
           }
         : {
             title: title.trim() || 'Untitled',
@@ -41,6 +45,8 @@ export default function CreateProjectForm() {
             channel_style: 'dramatic_history_shorts',
             target_duration_sec: duration,
             aspect_ratio: aspectRatio,
+            voice_id: voiceId,
+            voice_engine: voiceEngine,
           };
 
       const project = await createProject(payload);
@@ -170,8 +176,75 @@ export default function CreateProjectForm() {
           >
             <option value="9:16">9:16 Portrait (Shorts)</option>
             <option value="16:9">16:9 Landscape</option>
+            <option value="1:1">1:1 Square</option>
           </select>
         </div>
+      </div>
+
+      {/* Voice Settings */}
+      <div className="form-section">
+        <label className="form-label">Voice Settings</label>
+        <div className="form-row">
+          <div className="form-section">
+            <label className="form-label form-label-sm" htmlFor="field-voice-id">Voice</label>
+            <select
+              id="field-voice-id"
+              className="form-input form-select"
+              value={voiceId}
+              onChange={(e) => setVoiceId(e.target.value)}
+            >
+              <optgroup label="US English (Male)">
+                <option value="Matthew">Matthew - Authoritative</option>
+                <option value="Joey">Joey - Casual</option>
+                <option value="Justin">Justin - Young</option>
+                <option value="Stephen">Stephen - Professional</option>
+              </optgroup>
+              <optgroup label="US English (Female)">
+                <option value="Joanna">Joanna - Warm</option>
+                <option value="Kendra">Kendra - Neutral</option>
+                <option value="Kimberly">Kimberly - Conversational</option>
+                <option value="Salli">Salli - Friendly</option>
+                <option value="Ruth">Ruth - News Anchor</option>
+                <option value="Ivy">Ivy - Young</option>
+              </optgroup>
+              <optgroup label="UK English">
+                <option value="Brian">Brian - Professional (Male)</option>
+                <option value="Amy">Amy - Clear (Female)</option>
+                <option value="Emma">Emma - Warm (Female)</option>
+                <option value="Arthur">Arthur - Professional (Male)</option>
+              </optgroup>
+              <optgroup label="Australian English">
+                <option value="Russell">Russell - Professional (Male)</option>
+                <option value="Nicole">Nicole - Clear (Female)</option>
+                <option value="Olivia">Olivia - Warm (Female)</option>
+              </optgroup>
+              <optgroup label="Other English">
+                <option value="Ayanda">Ayanda - South African (Female)</option>
+                <option value="Kajal">Kajal - Indian (Female)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div className="form-section">
+            <label className="form-label form-label-sm" htmlFor="field-voice-engine">Quality</label>
+            <select
+              id="field-voice-engine"
+              className="form-input form-select"
+              value={voiceEngine}
+              onChange={(e) => setVoiceEngine(e.target.value)}
+            >
+              <option value="generative">Generative (Most Natural - Short Videos)</option>
+              <option value="long-form">Long-form (Best for 3+ Min Videos)</option>
+              <option value="neural">Neural (Great Quality - Recommended)</option>
+              <option value="standard">Standard (Basic Quality)</option>
+            </select>
+          </div>
+        </div>
+        <p className="form-hint">
+          {voiceEngine === 'generative' && '🎯 Premium quality - Most natural for videos under 3 minutes. Only available for Ruth, Stephen, Matthew, Joanna.'}
+          {voiceEngine === 'long-form' && '📖 Best for extended content (3+ minutes) - Consistent quality throughout. Higher cost but maintains tone.'}
+          {voiceEngine === 'neural' && '⭐ Recommended - Natural sounding with great value.'}
+          {voiceEngine === 'standard' && '💰 Basic quality - Good for testing.'}
+        </p>
       </div>
 
       {/* Submit */}

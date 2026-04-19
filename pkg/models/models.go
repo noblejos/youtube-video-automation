@@ -85,6 +85,8 @@ type Project struct {
 	ChannelStyle      string     `json:"channel_style" db:"channel_style"`
 	TargetDurationSec int        `json:"target_duration_sec" db:"target_duration_sec"`
 	AspectRatio       string     `json:"aspect_ratio" db:"aspect_ratio"`
+	VoiceID           string     `json:"voice_id" db:"voice_id"`
+	VoiceEngine       string     `json:"voice_engine" db:"voice_engine"`
 	Status            string     `json:"status" db:"status"`
 	ReviewRequired    bool       `json:"review_required" db:"review_required"`
 	CurrentStep       *string    `json:"current_step,omitempty" db:"current_step"`

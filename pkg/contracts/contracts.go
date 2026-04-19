@@ -15,6 +15,8 @@ type CreateProjectRequest struct {
 	TargetDurationSec int    `json:"target_duration_sec,omitempty"`
 	AspectRatio       string `json:"aspect_ratio,omitempty"`
 	ReviewRequired    *bool  `json:"review_required,omitempty"`
+	VoiceID           string `json:"voice_id,omitempty"`           // AWS Polly voice ID (e.g., "Matthew", "Joanna")
+	VoiceEngine       string `json:"voice_engine,omitempty"`       // "standard", "neural", "generative", or "long-form"
 }
 
 // ProjectResponse represents a project response

@@ -32,10 +32,10 @@ func (r *Repository) Create(ctx context.Context, project *models.Project) error 
 	query := `
 		INSERT INTO projects (
 			id, external_id, topic, title, channel_style, target_duration_sec,
-			aspect_ratio, status, review_required, current_step, error_message,
+			aspect_ratio, voice_id, voice_engine, status, review_required, current_step, error_message,
 			created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 		)
 	`
 
@@ -47,6 +47,8 @@ func (r *Repository) Create(ctx context.Context, project *models.Project) error 
 		project.ChannelStyle,
 		project.TargetDurationSec,
 		project.AspectRatio,
+		project.VoiceID,
+		project.VoiceEngine,
 		project.Status,
 		project.ReviewRequired,
 		project.CurrentStep,
@@ -65,7 +67,7 @@ func (r *Repository) Create(ctx context.Context, project *models.Project) error 
 func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Project, error) {
 	query := `
 		SELECT id, external_id, topic, title, channel_style, target_duration_sec,
-			aspect_ratio, status, review_required, current_step, error_message,
+			aspect_ratio, voice_id, voice_engine, status, review_required, current_step, error_message,
 			created_at, updated_at
 		FROM projects WHERE id = $1
 	`
@@ -79,6 +81,8 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Project
 		&project.ChannelStyle,
 		&project.TargetDurationSec,
 		&project.AspectRatio,
+		&project.VoiceID,
+		&project.VoiceEngine,
 		&project.Status,
 		&project.ReviewRequired,
 		&project.CurrentStep,
@@ -100,7 +104,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*models.Project
 func (r *Repository) GetByExternalID(ctx context.Context, externalID string) (*models.Project, error) {
 	query := `
 		SELECT id, external_id, topic, title, channel_style, target_duration_sec,
-			aspect_ratio, status, review_required, current_step, error_message,
+			aspect_ratio, voice_id, voice_engine, status, review_required, current_step, error_message,
 			created_at, updated_at
 		FROM projects WHERE external_id = $1
 	`
@@ -114,6 +118,8 @@ func (r *Repository) GetByExternalID(ctx context.Context, externalID string) (*m
 		&project.ChannelStyle,
 		&project.TargetDurationSec,
 		&project.AspectRatio,
+		&project.VoiceID,
+		&project.VoiceEngine,
 		&project.Status,
 		&project.ReviewRequired,
 		&project.CurrentStep,
@@ -181,7 +187,7 @@ func (r *Repository) List(ctx context.Context, status string, limit, offset int)
 	if status != "" {
 		query = `
 			SELECT id, external_id, topic, title, channel_style, target_duration_sec,
-				aspect_ratio, status, review_required, current_step, error_message,
+				aspect_ratio, voice_id, voice_engine, status, review_required, current_step, error_message,
 				created_at, updated_at
 			FROM projects WHERE status = $1
 			ORDER BY created_at DESC
@@ -191,7 +197,7 @@ func (r *Repository) List(ctx context.Context, status string, limit, offset int)
 	} else {
 		query = `
 			SELECT id, external_id, topic, title, channel_style, target_duration_sec,
-				aspect_ratio, status, review_required, current_step, error_message,
+				aspect_ratio, voice_id, voice_engine, status, review_required, current_step, error_message,
 				created_at, updated_at
 			FROM projects
 			ORDER BY created_at DESC
@@ -217,6 +223,8 @@ func (r *Repository) List(ctx context.Context, status string, limit, offset int)
 			&project.ChannelStyle,
 			&project.TargetDurationSec,
 			&project.AspectRatio,
+			&project.VoiceID,
+			&project.VoiceEngine,
 			&project.Status,
 			&project.ReviewRequired,
 			&project.CurrentStep,

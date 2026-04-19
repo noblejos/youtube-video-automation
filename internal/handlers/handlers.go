@@ -321,11 +321,17 @@ func (h *JobHandlers) HandleRender(ctx context.Context, job *models.Job) error {
 		title = manifest.Project.Title
 	}
 
+	// Get project to retrieve aspect ratio
+	project, err := h.workflowService.GetProject(ctx, payload.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	// Render (or mock render)
 	if h.useMockRender {
-		_, err = h.renderService.MockRender(ctx, payload.ProjectID, title, renderScenes, subtitle.StorageKey)
+		_, err = h.renderService.MockRender(ctx, payload.ProjectID, title, project.AspectRatio, renderScenes, subtitle.StorageKey)
 	} else {
-		_, err = h.renderService.Render(ctx, payload.ProjectID, title, renderScenes, subtitle.StorageKey)
+		_, err = h.renderService.Render(ctx, payload.ProjectID, title, project.AspectRatio, renderScenes, subtitle.StorageKey)
 	}
 
 	if err != nil {

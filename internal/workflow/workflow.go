@@ -94,6 +94,17 @@ func (s *Service) CreateProject(ctx context.Context, req *contracts.CreateProjec
 		reviewRequired = *req.ReviewRequired
 	}
 
+	// Voice settings - use from request or fall back to config defaults
+	voiceID := req.VoiceID
+	if voiceID == "" {
+		voiceID = s.voiceConfig.DefaultVoice
+	}
+
+	voiceEngine := req.VoiceEngine
+	if voiceEngine == "" {
+		voiceEngine = s.voiceConfig.Engine
+	}
+
 	// Create project
 	project := &models.Project{
 		ID:                uuid.New(),
@@ -102,6 +113,8 @@ func (s *Service) CreateProject(ctx context.Context, req *contracts.CreateProjec
 		ChannelStyle:      channelStyle,
 		TargetDurationSec: targetDuration,
 		AspectRatio:       aspectRatio,
+		VoiceID:           voiceID,
+		VoiceEngine:       voiceEngine,
 		Status:            models.ProjectStatusCreated,
 		ReviewRequired:    reviewRequired,
 	}
@@ -294,8 +307,8 @@ func (s *Service) EnqueueVoiceGeneration(ctx context.Context, project *models.Pr
 			ProjectID: project.ID,
 			SceneID:   &scene.ID,
 		},
-		VoiceID: s.voiceConfig.DefaultVoice,
-		Engine:  s.voiceConfig.Engine,
+		VoiceID: project.VoiceID,
+		Engine:  project.VoiceEngine,
 	}
 
 	job, err := jobs.CreateJob(project.ID, models.JobTypeVoiceGeneration, payload)
@@ -585,6 +598,11 @@ func (s *Service) MarkProjectFailed(ctx context.Context, projectID uuid.UUID, er
 	ctx = logger.WithProjectID(ctx, projectID.String())
 	logger.Error(ctx, "project failed", "error", errorMsg)
 	return s.projectRepo.SetError(ctx, projectID, errorMsg)
+}
+
+// GetProject gets a project by ID
+func (s *Service) GetProject(ctx context.Context, projectID uuid.UUID) (*models.Project, error) {
+	return s.projectRepo.GetByID(ctx, projectID)
 }
 
 // GetProjectManifest gets the full manifest for a project

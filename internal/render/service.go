@@ -125,11 +125,14 @@ type SceneAssets struct {
 }
 
 // Render renders the final video for a project
-func (s *Service) Render(ctx context.Context, projectID uuid.UUID, title string, scenes []SceneAssets, subtitleKey string) (*contracts.RenderManifest, error) {
+func (s *Service) Render(ctx context.Context, projectID uuid.UUID, title string, aspectRatio string, scenes []SceneAssets, subtitleKey string) (*contracts.RenderManifest, error) {
 	ctx = logger.WithProjectID(ctx, projectID.String())
 	ctx = logger.WithStage(ctx, "render")
 
-	logger.Info(ctx, "starting render", "scene_count", len(scenes))
+	// Calculate dimensions from aspect ratio
+	width, height := s.getDimensionsFromAspectRatio(aspectRatio)
+
+	logger.Info(ctx, "starting render", "scene_count", len(scenes), "aspect_ratio", aspectRatio, "width", width, "height", height)
 
 	// Create temp directory for this render
 	tempDir := filepath.Join(s.config.TempDir, "render-"+projectID.String())
@@ -156,7 +159,7 @@ func (s *Service) Render(ctx context.Context, projectID uuid.UUID, title string,
 	manifest := &contracts.RenderManifest{
 		ProjectID:   projectID,
 		Title:       title,
-		AspectRatio: fmt.Sprintf("%d:%d", s.config.Width, s.config.Height),
+		AspectRatio: aspectRatio,
 		SceneCount:  len(scenes),
 	}
 
@@ -165,7 +168,7 @@ func (s *Service) Render(ctx context.Context, projectID uuid.UUID, title string,
 
 	// Render each scene
 	for _, scene := range scenes {
-		clipPath, err := s.renderScene(ctx, tempDir, scene)
+		clipPath, err := s.renderScene(ctx, tempDir, width, height, scene)
 		if err != nil {
 			return nil, fmt.Errorf("failed to render scene %d: %w", scene.SceneNumber, err)
 		}
@@ -260,7 +263,7 @@ func (s *Service) Render(ctx context.Context, projectID uuid.UUID, title string,
 	return manifest, nil
 }
 
-func (s *Service) renderScene(ctx context.Context, tempDir string, scene SceneAssets) (string, error) {
+func (s *Service) renderScene(ctx context.Context, tempDir string, width, height int, scene SceneAssets) (string, error) {
 	// Download image and audio
 	imageData, err := s.storage.Get(ctx, scene.ImageKey)
 	if err != nil {
@@ -295,10 +298,10 @@ func (s *Service) renderScene(ctx context.Context, tempDir string, scene SceneAs
 		"-b:a", "192k",
 		"-pix_fmt", "yuv420p",
 		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0005,1.2)':d=%d:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=%dx%d",
-			s.config.Width, s.config.Height,
-			s.config.Width, s.config.Height,
+			width, height,
+			width, height,
 			int(scene.DurationSec*float64(s.config.FPS)),
-			s.config.Width, s.config.Height),
+			width, height),
 		"-shortest",
 		"-y",
 		outputPath,
@@ -385,16 +388,16 @@ func (s *Service) burnSubtitles(ctx context.Context, inputPath, subtitlePath, ou
 }
 
 // MockRender creates a mock render for testing without FFmpeg
-func (s *Service) MockRender(ctx context.Context, projectID uuid.UUID, title string, scenes []SceneAssets, subtitleKey string) (*contracts.RenderManifest, error) {
+func (s *Service) MockRender(ctx context.Context, projectID uuid.UUID, title string, aspectRatio string, scenes []SceneAssets, subtitleKey string) (*contracts.RenderManifest, error) {
 	ctx = logger.WithProjectID(ctx, projectID.String())
 	ctx = logger.WithStage(ctx, "mock_render")
 
-	logger.Info(ctx, "creating mock render", "scene_count", len(scenes))
+	logger.Info(ctx, "creating mock render", "scene_count", len(scenes), "aspect_ratio", aspectRatio)
 
 	manifest := &contracts.RenderManifest{
 		ProjectID:   projectID,
 		Title:       title,
-		AspectRatio: "9:16",
+		AspectRatio: aspectRatio,
 		SceneCount:  len(scenes),
 	}
 
@@ -457,4 +460,22 @@ func (s *Service) MockRender(ctx context.Context, projectID uuid.UUID, title str
 	logger.Info(ctx, "mock render completed", "duration_sec", totalDuration)
 
 	return manifest, nil
+}
+
+// getDimensionsFromAspectRatio calculates width and height from aspect ratio string
+func (s *Service) getDimensionsFromAspectRatio(aspectRatio string) (int, int) {
+	switch aspectRatio {
+	case "9:16":
+		// Portrait (YouTube Shorts, TikTok, Instagram Reels)
+		return 1080, 1920
+	case "16:9":
+		// Landscape (YouTube standard)
+		return 1920, 1080
+	case "1:1":
+		// Square (Instagram posts)
+		return 1080, 1080
+	default:
+		// Default to portrait
+		return 1080, 1920
+	}
 }
